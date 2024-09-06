@@ -12,7 +12,7 @@ int currentState;
 #define WLAN_SSID   "WiFiCJP-Alumnos"
 #define WLAN_PASS   "cjpalumnos2021"
 
-#define HOST        "10.100.0.151"
+#define HOST        "190.104.149.31"
 
 #define PORT        1883
 #define USERNAME    "linux"
@@ -27,6 +27,7 @@ Adafruit_MQTT_Publish acelera_x = Adafruit_MQTT_Publish(&mqtt, "acelerometro/ax"
 Adafruit_MQTT_Publish acelera_y = Adafruit_MQTT_Publish(&mqtt, "acelerometro/ay");
 Adafruit_MQTT_Publish acelera_z = Adafruit_MQTT_Publish(&mqtt, "acelerometro/az");
 Adafruit_MQTT_Publish button = Adafruit_MQTT_Publish(&mqtt, "acelerometro/button");
+Adafruit_MQTT_Publish msg = Adafruit_MQTT_Publish(&mqtt, "msg/hola");
 
 
 void MQTT_connect();
@@ -48,17 +49,14 @@ void setup() {
   }
   if(i == timeout)
     Serial.println("No Conectado");
-  LedConect(100, red);
 
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
-  LedConect(100, green);
 
   MQTT_connect();
-  init_MPU_sensor();
 }
   void loop() 
 {
-
+  msg.publish("HOLA");
   // acelera_x.publish(ax_d);
   // delay(1);
   // acelera_y.publish(ay_d);
@@ -84,10 +82,8 @@ void MQTT_connect() {
        retries--;
        if (retries == 0)
          Serial.println("No Conectado");
-           LedConect(200, red);
 
   }
   Serial.println("MQTT Connected!");
-   LedConect(100, blue);
 }
 
