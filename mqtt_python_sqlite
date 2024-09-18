@@ -1,0 +1,102 @@
+import paho.mqtt.client as mqtt
+import sqlite3
+from sqlite3 import Error
+
+# Configuración de MQTT
+BROKER_ADDRESS = "broker.mqtt-dashboard.com"  # Cambia al broker que estés utilizando
+TOPIC = "test/topic"  # Cambia al tópico que desees utilizar
+CLIENT_ID = "mqtt_client"
+
+# Conexión a la base de datos SQLite
+DB_PATH = "mqtt_messages.db"
+
+# Crear tabla en SQLite si no existe
+def create_table():
+    try:
+        connection = sqlite3.connect(DB_PATH)
+        cursor = connection.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS mqtt_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                topic TEXT NOT NULL,
+                message TEXT NOT NULL,
+                received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        connection.commit()
+        cursor.close()
+        connection.close()
+        print("Tabla creada o ya existe")
+    except Error as e:
+        print(f"Error al crear la tabla: {e}")
+
+# Guardar mensajes en la base de datos SQLite
+def save_message_to_db(topic, message):
+    try:
+        connection = sqlite3.connect(DB_PATH)
+        cursor = connection.cursor()
+        query = "INSERT INTO mqtt_messages (topic, message) VALUES (?, ?)"
+        cursor.execute(query, (topic, message))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        print(f"Mensaje guardado: {message}")
+    except Error as e:
+        print(f"Error al guardar el mensaje en la base de datos: {e}")
+
+# Funciones de callback MQTT
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Conectado al broker MQTT")
+        client.subscribe(TOPIC)
+    else:
+        print(f"Error de conexión: {rc}")
+
+def on_message(client, userdata, msg):
+    message = msg.payload.decode()
+    print(f"Mensaje recibido: {message} en el tópico: {msg.topic}")
+    save_message_to_db(msg.topic, message)
+
+# Función para publicar un mensaje
+def publish_message(client, topic, message):
+    result = client.publish(topic, message)
+    if result.rc == 0:
+        print(f"Mensaje enviado exitosamente al tópico {topic}")
+    else:
+        print(f"Fallo al enviar el mensaje al tópico {topic}")
+
+# Inicialización de MQTT
+def mqtt_client():
+    client = mqtt.Client(CLIENT_ID)
+    client.on_connect = on_connect
+    client.on_message = on_message
+    return client
+
+# Función para suscribirse a un tópico y recibir mensajes
+def subscribe(client, topic):
+    client.subscribe(topic)
+    print(f"Suscrito al tópico: {topic}")
+
+# Ejecutar el cliente MQTT
+def run():
+    create_table()  # Asegura que la tabla existe antes de cualquier operación
+    client = mqtt_client()
+    client.connect(BROKER_ADDRESS, 1883, 60)
+    client.loop_start()
+
+    # Publicar un mensaje de ejemplo
+    publish_message(client, TOPIC, "Hola desde MQTT y Python usando SQLite")
+
+    # Suscribir al tópico
+    subscribe(client, TOPIC)
+
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        print("Desconectando...")
+        client.loop_stop()
+        client.disconnect()
+
+if __name__ == "__main__":
+    run()
