@@ -1,0 +1,104 @@
+import psycopg2
+
+# Establecer conexión con la base de datos PostgreSQL
+def conectar_bd():
+    try:
+        # Conectar a la base de datos postgres (preexistente)
+        conexion = psycopg2.connect(
+            host="localhost",
+            user="tu_usuario",
+            password="tu_contraseña",
+            database="postgres"  # Cambia si ya tienes una base de datos específica
+        )
+        conexion.autocommit = True  # Necesario para crear una nueva base de datos
+        return conexion
+    except Exception as error:
+        print(f"Error conectando a la base de datos: {error}")
+
+# Crear una nueva base de datos
+def crear_base_datos(conexion, nombre_bd):
+    try:
+        cursor = conexion.cursor()
+        cursor.execute(f"CREATE DATABASE {nombre_bd}")
+        print(f"Base de datos '{nombre_bd}' creada con éxito")
+    except Exception as error:
+        print(f"Error al crear la base de datos: {error}")
+    finally:
+        cursor.close()
+
+# Crear tablas en la base de datos
+def crear_tabla(conexion):
+    try:
+        cursor = conexion.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS estudiantes (
+                id SERIAL PRIMARY KEY,
+                nombre VARCHAR(100),
+                edad INTEGER,
+                curso VARCHAR(50)
+            )
+        """)
+        print("Tabla 'estudiantes' creada con éxito")
+    except Exception as error:
+        print(f"Error al crear la tabla: {error}")
+    finally:
+        cursor.close()
+
+# Insertar datos en la tabla
+def insertar_datos(conexion):
+    try:
+        cursor = conexion.cursor()
+        cursor.execute("""
+            INSERT INTO estudiantes (nombre, edad, curso) 
+            VALUES 
+            ('Juan Pérez', 21, 'Ingeniería'),
+            ('Ana Gómez', 22, 'Medicina'),
+            ('Luis Torres', 20, 'Arquitectura')
+        """)
+        conexion.commit()
+        print("Datos insertados con éxito")
+    except Exception as error:
+        print(f"Error al insertar datos: {error}")
+    finally:
+        cursor.close()
+
+# Consultar datos de la tabla
+def ver_datos(conexion):
+    try:
+        cursor = conexion.cursor()
+        cursor.execute("SELECT * FROM estudiantes")
+        rows = cursor.fetchall()
+        for row in rows:
+            print(row)
+    except Exception as error:
+        print(f"Error al consultar datos: {error}")
+    finally:
+        cursor.close()
+
+if __name__ == "__main__":
+    # Conectar a la base de datos PostgreSQL
+    conexion = conectar_bd()
+
+    # Crear una nueva base de datos (solo si es necesario)
+    # crear_base_datos(conexion, "mi_nueva_base_de_datos")
+
+    # Conectar a la base de datos recién creada
+    conexion.close()
+    conexion = psycopg2.connect(
+        host="localhost",
+        user="tu_usuario",
+        password="tu_contraseña",
+        database="mi_nueva_base_de_datos"  # Cambia según tu nueva base de datos
+    )
+
+    # Crear tabla
+    crear_tabla(conexion)
+
+    # Insertar datos
+    insertar_datos(conexion)
+
+    # Ver los datos insertados
+    ver_datos(conexion)
+
+    # Cerrar la conexión
+    conexion.close()
